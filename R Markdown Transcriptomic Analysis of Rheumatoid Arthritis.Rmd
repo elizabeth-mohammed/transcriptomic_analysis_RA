@@ -1,0 +1,452 @@
+---
+title: "Capstone Final R Code"
+author: "Elizabeth Mohammed"
+date: "2024-12-11"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+Elizabeth Mohammed
+erm349
+
+
+	A Transcriptomic Analysis of Rheumatoid Arthritis and Treatment Impact
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Importing counts from galaxy 
+
+#PT1_pre <- read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on #collection 143/PT1_pre upadacitinibSRR27596828.tabular", row.names=1)
+
+PT1_postJAK<-read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on collection 143/PT1_post upadacitinibSRR27596827.tabular", row.names=1)
+
+#PT2_pre <- read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on #collection 143/PT2_pre upadacitinibSRR27596830.tabular", row.names=1)
+
+PT2_postJAK<-read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on collection 143/PT2_post upadacitinibSRR27596829.tabular", row.names=1)
+
+#PT3_pre <- read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on #collection 143/PT3_pre upadacitinibSRR27596832.tabular", row.names=1)
+
+PT3_postJAK <- read.delim("/Users/Elizabeth/Documents/Capstone/Jak inhibitor data/featureCounts on collection 143/PT3_post upadacitinib.tabular", row.names=1)
+
+head(PT2_postJAK)
+
+```
+
+```{r}
+#Merging count data to one data frame
+
+JAKdata = cbind( PT1_postJAK,  PT2_postJAK,  PT1_postJAK)
+
+head(JAKdata)
+```
+
+```{r}
+#Change column names to better identify gene count results
+
+colnames(JAKdata) <- c( "PT1_postJAK", "PT2_postJAK", "PT1_postJAK")
+
+head(JAKdata)
+```
+
+```{r}
+# Read file names in path with extension ".tabular" These are also downloaded from Galaxy after processing
+
+filenames <- list.files(path="/Users/Elizabeth/Documents/Capstone/Biologic and TNF blocker",
+    pattern=".tabular")
+
+names <-substr(filenames,1,7)
+
+names
+
+```
+
+
+```{r}
+# We will import another set of data from RA positive individual's PBMC samples pre and post treatment with MTX or a biologic ADA https://www.ncbi.nlm.nih.gov/bioproject/PRJNA807144
+
+
+# Load necessary libraries
+library(dplyr)
+
+# Get a list of CSV files in the 'data' directory
+files <- list.files(path="/Users/Elizabeth/Documents/Capstone/Biologic and TNF blocker",
+    pattern=".tabular", full.names=TRUE)
+
+files
+# Initialize an empty list to store data frames
+data_list <- list()
+
+# Loop over each file and read it into a data frame
+for (file in files) {
+  data <- read.delim(file)
+  data_list[[file]] <- data
+}
+
+
+
+df<-data.frame(data_list)
+
+
+
+```
+
+```{r}
+# remove the duplicated columns and assign the genes as row names
+
+ADA_data <- df[!duplicated(as.list(df))]
+
+ADA_data2 <- ADA_data[,-1]
+rownames(ADA_data2) <- ADA_data[,1]
+
+
+
+
+
+# Dimenesions
+dim(ADA_data2)
+
+
+# First five rows:
+head(ADA_data2)
+```
+
+```{r}
+#Rename the column heads to the previously saved file names/identifiers
+
+colnames(ADA_data2)<-c(names)
+head(ADA_data2)
+```
+
+```{r}
+# We will also import data from RA positive individual's PBMC samples pre and post treatment with MTX
+#in three groups: newly diagnosed, disease modifying antirheumatic drugs (DMARD) naïve RA patients (N=11), methotrexate (MTX) treated RA patients (N=18), and healthy controls (N=9) matched for age, gender and smoking status
+
+
+healthy1 <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/healthy_control_SRR9960908.tabular", row.names=1)
+
+healthy2 <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/healthy_control_SRR9960953.tabular", row.names=1)
+
+healthy3 <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/healthy_control_SRR9960954.tabular", row.names=1)
+
+RA1pre <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/RA_newUntreatedSRR9960927.tabular", row.names=1)
+
+RA2pre <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/RA_newUntreatedSRR9960918.tabular", row.names=1)
+
+RA3pre <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/RA_newUntreatedSRR9960916.tabular", row.names=1)
+
+RA1MTX <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/MTX_treatedSRR9960950.tabular", row.names=1)
+
+RA2MTX <- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/MTX_treatedSRR9960945.tabular", row.names=1)
+
+RA3MTX<- read.delim("/Users/Elizabeth/Documents/Capstone/MTX only/featureCounts on collection 160/MTX_treatedSRR9960938.tabular", row.names=1)
+
+
+head(RA3MTX)
+head(RA2pre)
+
+
+
+
+```
+
+```{r}
+# bind all count data from this experiment into a dataframe and rename column names to visually identify patients
+
+MTXdata = cbind(healthy1, healthy2, healthy3, RA1pre, RA2pre, RA3pre,RA1MTX, RA2MTX, RA3MTX)
+colnames(MTXdata) <- c("healthy1", "healthy2", "healthy3", "RA1pre", "RA2pre", "RA3pre" , "RA1MTX", "RA2MTX", "RA3MTX")
+
+head(MTXdata)
+
+```
+
+```{r}
+#Combine both count data frames from the JAK inhibitor experiment and the MTX experiment
+
+
+mergeddata = cbind(JAKdata, MTXdata, ADA_data2)
+#head(merge2)
+head(mergeddata)
+```
+
+```{r}
+#Filtering out lowly expressed genes. Any gene with a count < 10 will be removed. 10 is based on the suggestions from the Bioconductor manual
+
+library(tidyverse)
+library(reshape2)
+library(ggplot2)
+
+filterdata<-mergeddata[-which(rowSums(mergeddata[sapply(mergeddata, is.numeric)]) < 1),]
+
+head(filterdata)
+
+
+nrow(filterdata)
+
+```
+
+```{r}
+# Count data needs to be normalized since the data is from two different studies. This could mean 
+# there could be many differences in library sized or sequencing depth. DEseq2 has it's own
+# normalization method so we will be using that. 
+
+# We will now prep for DEseq2
+# Create experiment group factors:
+
+column_names = names(filterdata)
+patient = c("PT1","PT2","PT3","H1","H2","H3", "PT4", "PT5", "PT6", "PT7", "PT8", "PT9", "PT10", "PT11", "PT12", "PT13", "PT14", "PT15", "PT16", "PT17", "PT18", "PT19", "PT20")
+treatment = c( "JAK","JAK","JAK","aControl","aControl", "aControl", "untreatedRA","untreatedRA","untreatedRA","MTX","MTX","MTX", "ADA", "ADA", "ADA", "ADA", "aControl", "aControl", "aControl", "MTX", "MTX", "MTX", "MTX")
+coldata = data.frame(patient = patient, treatment = treatment)
+coldata
+
+
+nrow(coldata)
+column_names
+
+```
+
+```{r}
+# Creating a DESEQ2 object to measure effect of treatment on the patient
+
+library(DESeq2)
+dds <- DESeqDataSetFromMatrix(countData = filterdata,
+                              colData = coldata,
+                              design= ~treatment )
+```
+
+```{r}
+dds
+dds <- DESeq(dds)
+```
+
+```{r}
+# Contrasts from ~treatment
+resultsNames(dds)
+```
+
+```{r}
+#Remove poorly expressed genes
+
+keep<- rowSums(counts(dds)) >=5
+dds<- dds[keep,]
+```
+
+```{r}
+res <- results(dds)
+res
+summary(res)
+```
+
+```{r}
+# Let's plot the results on a Volcano Plot to view outliers and differentiall expressed genes
+# Create custom key-value pairs for 'high', 'low', 'mid' expression by fold-change
+library(EnhancedVolcano)
+
+  keyvals <- ifelse(
+    res$log2FoldChange < -2.5, 'royalblue',
+      ifelse(res$log2FoldChange > 2.5, 'gold',
+        'black'))
+  keyvals[is.na(keyvals)] <- 'black'
+  names(keyvals)[keyvals == 'gold'] <- 'high'
+  names(keyvals)[keyvals == 'black'] <- 'mid'
+  names(keyvals)[keyvals == 'royalblue'] <- 'low'
+  
+  
+    EnhancedVolcano(res,
+    lab = rownames(res),
+    x = 'log2FoldChange',
+    y = 'pvalue',
+    selectLab = rownames(res)[which(names(keyvals) %in% c('high', 'low'))],
+    xlab = bquote(~Log[2]~ 'fold change'),
+    title = 'High, Low, and Mid Expression',
+    pCutoff = 10e-14,
+    FCcutoff = 1.0,
+    pointSize = 3.5,
+    labSize = 4.5,
+    shape = c(6, 4, 2, 11),
+    colCustom = keyvals,
+    colAlpha = 1,
+    legendPosition = 'left',
+    legendLabSize = 15,
+    legendIconSize = 5.0,
+    drawConnectors = TRUE,
+    widthConnectors = 1.0,
+    colConnectors = 'black',
+    arrowheads = FALSE,
+    gridlines.major = TRUE,
+    gridlines.minor = FALSE,
+    border = 'partial',
+    borderWidth = 1.5,
+    borderColour = 'black')
+  
+```
+
+```{r}
+# Most genes are downregulated in the RA groups compared to the healthy control group
+
+# plotting the gene with the lowest adjusted p-value
+plotCounts(dds, gene=which.min(res$padj), intgroup="treatment")
+
+#MPI is a gene of interest
+```
+
+```{r}
+# We will quality check the data and use Principle Component Analysis (PCA) to view variation and strong patterns by dimensionality reduction.
+
+rld <- rlog(dds, blind=TRUE) # Apply rlog function to moderate the variance across the mean for better clustering for the PCA
+plotPCA(rld, intgroup="treatment")
+```
+
+```{r fig.height = 2, fig.width = 3}
+# We can further see that variance from the JAK treated groups are very different than the rest of the groups. The ADA treated groups do have some in common with both the control (healthy) groups and MTX treated groups. While MTX and less than half of the control group overlap with the untreated RA group. The MTX data and healthy control data may not be of as great quality as the other groups as they are not closely clustered together. We will also check with a heatmap and hierarchical clustering
+
+library(pheatmap)
+
+# Extract the rlog matrix from the object
+rld_mat <- assay(rld) 
+# Compute pairwise correlation values
+rld_cor <- cor(rld_mat)    ## cor() is a base R function
+
+head(rld_cor)   ## check the output of cor(), make note of the rownames and colnames
+
+# Plot the heatmap
+pheatmap(rld_cor)
+```
+
+```{r}
+# While we observe pretty high correlations across the board ( > 0.999), not all of the healthy groups have a high correlation, nor do the MTX groups. Better quality data may be needed for more investigation 
+```
+
+```{r}
+# We will again further investigate the DEGs
+
+# Filter genes that have an extreme outlier. DeSEQ2 calculates outliers using Cook's distance. It is a measure of how much a single sample is influencing the fitted coefficients for a gene- a large value is an outlier.
+
+#res[which(is.na(res$pvalue) & 
+#                    is.na(res$padj) &
+#                    res$baseMean > 0),] %>% 
+#  data.frame() %>% 
+
+```
+
+```{r}
+
+# MA plot using unshrunken fold changes
+plotMA(res, ylim=c(-10,10))
+
+# log2FoldChange is the effect size estimate. It tells us how much the gene's expression seems to have changed due to treatment. The MA plot confirms important DEGs are down regulated
+```
+
+```{r}
+# This count file uses Gene Symbols's for gene names- we will convert them to Ensembl ID's for further analysis:
+library('biomaRt')
+library(org.Hs.eg.db)
+keytypes(org.Hs.eg.db)
+
+
+library(pathview)
+library(clusterProfiler)
+library(enrichplot)
+library(ggplot2)
+
+#We will use Bioconductor to view the highly DEG's ontologies. First we set the organism:
+organism = "org.Hs.eg.db"
+#BiocManager::install(organism, character.only = TRUE)
+library(organism, character.only = TRUE)
+```
+
+```{r fig.height = 2, fig.width = 3}
+# We will run a Gene Set Enrichment Analysis with ClusterProfiler
+# we want the log2 fold change 
+original_gene_list <- res$log2FoldChange
+
+# name the vector
+names(original_gene_list) <- rownames(res)
+
+# omit any NA values 
+gene_list<-na.omit(original_gene_list)
+
+# sort the list in decreasing order (required for clusterProfiler)
+gene_list = sort(gene_list, decreasing = TRUE)
+
+
+
+gse <- gseGO(geneList=gene_list, 
+             ont ="ALL", 
+             keyType = "SYMBOL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+```
+
+```{r fig.height = 4, fig.width = 4}
+#Dotplot of GSE Results
+require(DOSE)
+dotplot(gse, showCategory=10, split=".sign") + facet_grid(.~.sign)
+```
+
+```{r fig.height = 8, fig.width = 4}
+ridgeplot(gse) + labs(x = "enrichment distribution")
+```
+
+```{r}
+# Preparing for KEGG Gene Set Enrichment Analysis
+
+# Convert gene IDs for gseKEGG function
+# We will lose some genes here because not all IDs will be converted
+ids<-bitr(names(original_gene_list), fromType = "SYMBOL", toType = "ENTREZID", OrgDb=organism)
+ # remove duplicate IDS 
+dedup_ids = ids[!duplicated(ids[c("SYMBOL")]),]
+
+# Create a new dataframe df2 which has only the genes which were successfully mapped using the bitr function above
+df2 = res[rownames(res) %in% dedup_ids$SYMBOL,]
+
+# Create a new column in df2 with the corresponding ENTREZ IDs
+df2$Y = dedup_ids$ENTREZID
+
+# Create a vector of the genes
+kegg_gene_list <- df2$log2FoldChange
+
+# Name vector with ENTREZ ids
+names(kegg_gene_list) <- df2$Y
+
+# omit any NA values 
+kegg_gene_list<-na.omit(kegg_gene_list)
+
+# sort the list in decreasing order (required for clusterProfiler)
+kegg_gene_list = sort(kegg_gene_list, decreasing = TRUE)
+```
+
+```{r}
+#Create gseKEGG object
+kegg_organism = "hsa"
+kk2 <- gseKEGG(geneList     = kegg_gene_list,
+               organism     = kegg_organism,
+               nPerm        = 10000,
+               minGSSize    = 3,
+               maxGSSize    = 800,
+               pvalueCutoff = 0.05,
+               pAdjustMethod = "none",
+               keyType       = "ncbi-geneid")
+```
+
+```{r fig.height = 3, fig.width = 4}
+dotplot(kk2, showCategory = 10, title = "Enriched Pathways" , split=".sign") + facet_grid(.~.sign)
+```
+
+```{r fig.height = 8, fig.width = 4}
+ridgeplot(kk2) + labs(x = "enrichment distribution")
+```
+
